@@ -17,8 +17,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
     public ripple: any;
     protected timer: number | undefined;
     protected held: boolean;
-    protected cooldownStart: boolean;
-    protected cooldownEnd: boolean;
+    private cancelled = false;
     private dblClickTimeout: number | undefined;
 
     constructor() {
@@ -26,9 +25,8 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         this.holdTime = 500;
         this.ripple = document.createElement('mwc-ripple');
         this.timer = undefined;
+        this.dblClickTimeout = undefined;
         this.held = false;
-        this.cooldownStart = false;
-        this.cooldownEnd = false;
     }
 
     public connectedCallback(): void {
@@ -38,6 +36,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
             height: isTouch ? '100px' : '50px',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
+            zIndex: "999",
         });
 
         this.appendChild(this.ripple);
@@ -47,16 +46,19 @@ class ActionHandler extends HTMLElement implements ActionHandler {
             document.addEventListener(
                 ev,
                 () => {
-                    clearTimeout(this.timer);
-                    this.stopAnimation();
-                    this.timer = undefined;
+                    this.cancelled = true;
+                    if (this.timer) {
+                      this.stopAnimation();
+                      clearTimeout(this.timer);
+                      this.timer = undefined;
+                    }
                 },
                 { passive: true },
             );
         });
     }
 
-    public bind(element: ActionHandlerElement, options): void {
+    public bind(element: ActionHandlerElement, options: ActionHandlerOptions): void {
         if (element.actionHandler) {
             return;
         }
@@ -72,14 +74,11 @@ class ActionHandler extends HTMLElement implements ActionHandler {
             }
             e.cancelBubble = true;
             e.returnValue = false;
-            return;
+            return false;
         });
 
         const clickStart = (ev: Event): void => {
-            if (this.cooldownStart) {
-                return;
-            }
-            this.held = false;
+            this.cancelled = false;
             let x;
             let y;
             if ((ev as TouchEvent).touches) {
@@ -89,39 +88,46 @@ class ActionHandler extends HTMLElement implements ActionHandler {
                 x = (ev as MouseEvent).pageX;
                 y = (ev as MouseEvent).pageY;
             }
-
-            this.timer = window.setTimeout(() => {
-                this.startAnimation(x, y);
-                this.held = true;
-            }, this.holdTime);
-
-            this.cooldownStart = true;
-            window.setTimeout(() => (this.cooldownStart = false), 100);
+            if (options.hasHold) {
+              this.held = false;
+              this.timer = window.setTimeout(() => {
+                  this.startAnimation(x, y);
+                  this.held = true;
+              }, this.holdTime);
+            }
         };
 
         const clickEnd = (ev: Event): void => {
-            if (this.cooldownEnd || (['touchend', 'touchcancel'].includes(ev.type) && this.timer === undefined)) {
+            if ((['touchend', 'touchcancel'].includes(ev.type) && this.cancelled)) {
                 return;
             }
-            clearTimeout(this.timer);
-            this.stopAnimation();
-            this.timer = undefined;
-            if (this.held) {
-                fireEvent(element as HTMLElement, 'action', { action: 'hold' });
-            } else if (options.hasDoubleTap) {
-                if ((ev as MouseEvent).detail === 1 || ev.type === 'keyup') {
+            const target = ev.target as HTMLElement;
+            // Prevent mouse event if touch event
+            if (ev.cancelable) {
+              ev.preventDefault();
+            }
+            if (options.hasHold) {
+              clearTimeout(this.timer);
+              this.stopAnimation();
+              this.timer = undefined;
+            }
+            if (options.hasHold && this.held) {
+                fireEvent(target, 'action', { action: 'hold' });
+            } else if (options.hasDoubleClick) {
+                if ( (ev.type === "click" && (ev as MouseEvent).detail < 2) || !this.dblClickTimeout) {
                     this.dblClickTimeout = window.setTimeout(() => {
-                        fireEvent(element as HTMLElement, 'action', { action: 'tap' });
+                        this.dblClickTimeout = undefined;
+                        console.log(ev);
+                        fireEvent(target, 'action', { action: 'tap' });
                     }, 250);
                 } else {
                     clearTimeout(this.dblClickTimeout);
-                    fireEvent(element as HTMLElement, 'action', { action: 'double_tap' });
+                    this.dblClickTimeout = undefined;
+                    fireEvent(target, 'action', { action: 'double_tap' });
                 }
             } else {
-                fireEvent(element as HTMLElement, 'action', { action: 'tap' });
+                fireEvent(target, 'action', { action: 'tap' });
             }
-            this.cooldownEnd = true;
-            window.setTimeout(() => (this.cooldownEnd = false), 100);
         };
 
         const handleEnter = (ev: Event): void => {

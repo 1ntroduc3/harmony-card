@@ -1,3 +1,4 @@
+import { CallServiceActionConfig } from 'custom-card-helpers/dist';
 import { LitElement, html, customElement, property, TemplateResult, css, PropertyValues } from 'lit-element';
 import {
     HomeAssistant,
@@ -32,6 +33,10 @@ console.info(
 
 @customElement('harmony-card')
 export class HarmonyCard extends LitElement {
+    protected held = false;
+    protected timer: number | undefined;
+    public holdTime = 500;
+
     public static async getConfigElement(): Promise<LovelaceCardEditor> {
         return document.createElement('harmony-card-editor') as LovelaceCardEditor;
     }
@@ -62,6 +67,34 @@ export class HarmonyCard extends LitElement {
             name: '',
             ...config,
         };
+    }
+
+    protected handleMouseDown(e) {
+        this.preventBubbling(e);
+        this.held = false;
+        this.timer = window.setTimeout(() => {
+            this.held = true;
+        }, this.holdTime);
+        console.log('START CLICK');
+    }
+
+    protected handleMouseUp(e, buttonConfig: HarmonyButtonConfig) {
+        this.preventBubbling(e);
+        if ((['touchend', 'touchcancel'].includes(e.type) && this.timer === undefined)) {
+            return;
+        }
+        clearTimeout(this.timer);
+        this.timer = undefined;
+        if (this.held && typeof buttonConfig !== 'undefined' && typeof buttonConfig.hold_action !== 'undefined') {
+            const actionConfig = (buttonConfig.hold_action as CallServiceActionConfig);
+            const [domain, service] = actionConfig.service.split('.', 2);
+            // this.hass?.callService(domain, service, actionConfig.service_data);
+            // eslint-disable-next-line prettier/prettier
+            this.hass?.callService(domain, service, actionConfig.service_data);
+            console.log('END CLICK');
+            console.info({e, buttonConfig})
+        }
+
     }
 
     protected preventBubbling(e) {
@@ -154,17 +187,12 @@ export class HarmonyCard extends LitElement {
         var currentActivityConfig = this._config.activities.find(activity => activity.name === currentActivity);
         var currentDevice = currentActivityConfig?.device;
 
-        var buttonConfig = this.computeButtonConfig(this._config, currentActivityConfig);
+        var buttonConfig = this.computeButtonConfig(this._config, currentActivityConfig, currentDevice);
 
         return html`
       <ha-card
         style=${this.computeStyles()}
         .header=${this._config.name}
-        @action=${this._handleAction}
-        .actionHandler=${actionHandler({
-            hasHold: hasAction(this._config.hold_action),
-            hasDoubleClick: hasAction(this._config.double_tap_action),
-        })}
         tabindex="0"
         aria-label=${`Harmony: ${this._config.entity}`}
       >
@@ -222,21 +250,22 @@ export class HarmonyCard extends LitElement {
     `;
     }
 
-    private renderActivityButton(outlined: boolean, command: string, showIcon: boolean = false, icon?: string,): TemplateResult {
+    private renderActivityButton(outlined: boolean, activity: string, showIcon = false, icon?: string,): TemplateResult {
         return html`
            ${showIcon
               ? html`
               <ha-icon-button
                 icon="${icon}"
                 ?outlined="${outlined}"
-                @click="${e => this.harmonyCommand(e, command)}"
+                @click="${e => this.harmonyCommand(e, activity)}"
                 @touchstart="${e => this.preventBubbling(e)}"
               ></ha-icon-button>
             `
-             : `
+             : html`
               <mwc-button
                 ?outlined="${outlined}"
-                @click="${e => this.harmonyCommand(e, command)}"
+                label="${activity}"
+                @click="${e => this.harmonyCommand(e, activity)}"
                 @touchstart="${e => this.preventBubbling(e)}"
               ></mwc-button>        
             `}
@@ -271,7 +300,7 @@ export class HarmonyCard extends LitElement {
         `;
     }
 
-    private renderIconButton(buttonConfig: HarmonyButtonConfig, device?: string, styles?: StyleInfo) {
+    private renderIconButton(buttonConfig: HarmonyButtonConfig, _device?: string, styles?: StyleInfo) {
         if (buttonConfig.hide === true) {
             return html``;
         }
@@ -282,7 +311,12 @@ export class HarmonyCard extends LitElement {
             <ha-icon-button 
                 icon="${buttonConfig.icon}" 
                 style="${styleMap(buttonStyles)}"
-                @click="${e => this.deviceCommand(e, buttonConfig.device || device, buttonConfig.command || '')}" 
+                @action=${e => this._handleAction(e, buttonConfig)}
+                .actionHandler=${actionHandler({
+                    hasHold: hasAction(buttonConfig.hold_action),
+                    hasDoubleClick: hasAction(buttonConfig.double_tap_action),
+                })}
+                
                 @touchstart="${e => this.preventBubbling(e)}">
             </ha-icon-button>
         `;
@@ -299,6 +333,22 @@ export class HarmonyCard extends LitElement {
             return this.renderMediaPlayerVolumeControls(hass, config.volume_entity, buttonConfig);
         }
         else if (config.volume_device) {
+            const actionData: CallServiceActionConfig = {
+                action: 'call-service',
+                service: 'remote.send_command',
+                service_data: {
+                    entity_id: this._config?.entity,
+                    command: `VolumeDown`,
+                    device: config.volume_device,
+                },
+            }
+            const downActionData = deepmerge.default(actionData, {service_data: {command: 'VolumeDown'}} || {});
+            buttonConfig['volume_down'].tap_action = {...downActionData}
+            buttonConfig['volume_down'].hold_action = {...downActionData, repeat: 500}
+            const upActionData = deepmerge.default(actionData, {service_data: {command: 'VolumeUp'}} || {});
+            buttonConfig['volume_up'].tap_action = {...upActionData}
+            buttonConfig['volume_up'].hold_action = {...upActionData, repeat: 500}
+
             return this.renderDeviceVolumeControls(config.volume_device, buttonConfig);
         }
 
@@ -317,7 +367,7 @@ export class HarmonyCard extends LitElement {
 
         return html`
             <div class="volume-controls">
-                <ha-icon-button style="${styleMap(volumeDownStyle)}" icon="${buttonConfig['volume_down'].icon}" @click="${e => this.volumeCommand(e, 'volume_down')}" @touchstart="${e => this.preventBubbling(e)}"></ha-icon-button>
+                <ha-icon-button style="${styleMap(volumeDownStyle)}" icon="${buttonConfig['volume_down'].icon}" @click="${e => this.volumeCommand(e, 'volume_down')}" @touchstart="${e => this.preventBubbling(e)}" @mousedown="${e => this.handleMouseDown(e)}" @mouseup="${e => this.handleMouseUp(e, buttonConfig['volume_down'])}" ></ha-icon-button>
                 <ha-icon-button style="${styleMap(volumeUpStyle)}" icon="${buttonConfig['volume_up'].icon}" @click="${e => this.volumeCommand(e, 'volume_up')}" @touchstart="${e => this.preventBubbling(e)}"></ha-icon-button>
                 <paper-slider           
                     @change=${e => this.volumeCommand(e, 'volume_set', { volume_level: e.target.value / 100 })}
@@ -344,9 +394,11 @@ export class HarmonyCard extends LitElement {
             </div>`;
     }
 
-    private _handleAction(ev: ActionHandlerEvent): void {
-        if (this.hass && this._config && ev.detail.action) {
-            handleAction(this, this.hass, this._config, ev.detail.action);
+    private _handleAction(ev: ActionHandlerEvent, config?): void {
+        const conf = config ? config : this._config;
+        if (this.hass && conf && ev.detail.action) {
+            console.log(ev, conf)
+            handleAction(this, this.hass, conf, ev.detail.action);
         }
     }
 
@@ -359,7 +411,7 @@ export class HarmonyCard extends LitElement {
         });
     }
 
-    private computeButtonConfig(config: HarmonyCardConfig, currentActivityConfig?: HarmonyActivityConfig): { [key: string]: HarmonyButtonConfig } {
+    private computeButtonConfig(config: HarmonyCardConfig, currentActivityConfig?: HarmonyActivityConfig, currentDevice?: string): { [key: string]: HarmonyButtonConfig } {
         // overwrite in the card button config
         let buttonConfig = deepmerge.default(DEFAULT_BUTTONS, config.buttons || {});
 
@@ -367,6 +419,18 @@ export class HarmonyCard extends LitElement {
         if (currentActivityConfig) {
             buttonConfig = deepmerge.default(buttonConfig, currentActivityConfig.buttons || {});
         }
+        Object.values(buttonConfig).forEach((btn) => {
+            btn.tap_action = {
+                action: 'call-service',
+                service: 'remote.send_command',
+                service_data: {
+                    entity_id: this._config?.entity,
+                    command: btn.command,
+                    device: btn.device || currentDevice,
+                }
+            }
+        })
+
 
         return buttonConfig;
     }
