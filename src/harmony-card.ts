@@ -1,4 +1,5 @@
-import { LitElement, html, customElement, property, TemplateResult, css, PropertyValues } from 'lit-element';
+import { CallServiceActionConfig } from 'custom-card-helpers/dist';
+import { LitElement, html, customElement, property, TemplateResult, css, PropertyValues, internalProperty } from 'lit-element';
 import {
     HomeAssistant,
     hasAction,
@@ -6,6 +7,7 @@ import {
     handleAction,
     LovelaceCardEditor,
     getLovelace,
+    hasConfigOrEntityChanged
 } from 'custom-card-helpers';
 
 import { styleMap, StyleInfo } from 'lit-html/directives/style-map';
@@ -42,7 +44,7 @@ export class HarmonyCard extends LitElement {
 
     // TODO Add any properities that should cause your element to re-render here
     @property() public hass?: HomeAssistant;
-    @property() private _config?: HarmonyCardConfig;
+    @internalProperty() private config!: HarmonyCardConfig;
 
     public setConfig(config: HarmonyCardConfig): void {
         // TODO Check for required fields and that they are of the proper format
@@ -58,7 +60,7 @@ export class HarmonyCard extends LitElement {
             getLovelace().setEditMode(true);
         }
 
-        this._config = {
+        this.config = {
             name: '',
             ...config,
         };
@@ -77,68 +79,46 @@ export class HarmonyCard extends LitElement {
             return;
         }
 
-        this.hass?.callService("remote", "send_command", { entity_id: this._config?.entity, command: cmd, device: device });
+        this.hass?.callService("remote", "send_command", { entity_id: this.config?.entity, command: cmd, device: device });
     }
 
     protected harmonyCommand(e, activity: string) {
         this.preventBubbling(e);
 
         if (null == activity || activity == "off" || activity == 'turn_off') {
-            this.hass?.callService("remote", "turn_off", { entity_id: this._config?.entity });
+            this.hass?.callService("remote", "turn_off", { entity_id: this.config?.entity });
         }
         else {
-            this.hass?.callService("remote", "turn_on", { entity_id: this._config?.entity, activity: activity });
+            this.hass?.callService("remote", "turn_on", { entity_id: this.config?.entity, activity: activity });
         }
     }
 
     protected volumeCommand(e, command: string, attributes?: any) {
         this.preventBubbling(e);
 
-        if (this._config?.volume_entity) {
+        if (this.config?.volume_entity) {
 
-            var baseAttributes = { entity_id: this._config?.volume_entity };
+            var baseAttributes = { entity_id: this.config?.volume_entity };
 
             this.hass?.callService("media_player", command, Object.assign(baseAttributes, attributes || {}));
         }
     }
-
+    // https://lit-element.polymer-project.org/guide/lifecycle#shouldupdate
     protected shouldUpdate(changedProps: PropertyValues): boolean {
-        // has config changes
-        if (changedProps.has('config')) {
-            return true;
-        }
-
-
-        return this.hasEntityChanged(this, changedProps, 'entity');
-    }
-
-    // Check if Entity changed
-    private hasEntityChanged(
-        element: any,
-        changedProps: PropertyValues,
-        entityName
-    ): boolean {
-        if (element._config!.entity) {
-            const oldHass = changedProps.get('hass') as HomeAssistant | undefined;
-            if (oldHass) {
-                // check if state changed
-                if (oldHass.states[element._config![entityName]] !== element.hass!.states[element._config![entityName]]) {
-                    return true;
-                }
-            }
-            return true;
-        } else {
+        if (!this.config) {
             return false;
         }
+
+        return hasConfigOrEntityChanged(this, changedProps, false);
     }
 
     protected render(): TemplateResult | void {
-        if (!this._config || !this.hass) {
+        if (!this.config || !this.hass) {
             return html``;
         }
 
         // TODO Check for stateObj or other necessary things and render a warning if missing
-        if (this._config.show_warning) {
+        if (this.config.show_warning) {
             return html`
         <ha-card>
           <div class="warning">${localize('common.show_warning')}</div>
@@ -146,34 +126,34 @@ export class HarmonyCard extends LitElement {
       `;
         }
 
-        var hubState = this.hass.states[this._config.entity];
+        var hubState = this.hass.states[this.config.entity];
 
         var hubPowerState = hubState.state;
         var currentActivity = hubState.attributes.current_activity;
 
-        var currentActivityConfig = this._config.activities.find(activity => activity.name === currentActivity);
+        var currentActivityConfig = this.config.activities.find(activity => activity.name === currentActivity);
         var currentDevice = currentActivityConfig?.device;
 
-        var buttonConfig = this.computeButtonConfig(this._config, currentActivityConfig);
+        var buttonConfig = this.computeButtonConfig(this.config, currentActivityConfig);
 
         return html`
       <ha-card
         style=${this.computeStyles()}
-        .header=${this._config.name}
+        .header=${this.config.name}
         @action=${this._handleAction}
         .actionHandler=${actionHandler({
-            hasHold: hasAction(this._config.hold_action),
-            hasDoubleClick: hasAction(this._config.double_tap_action),
+            hasHold: hasAction(this.config.hold_action),
+            hasDoubleClick: hasAction(this.config.double_tap_action),
         })}
         tabindex="0"
-        aria-label=${`Harmony: ${this._config.entity}`}
+        aria-label=${`Harmony: ${this.config.entity}`}
       >
         <div class="card-content">
-            ${this.renderActivityButtons(this._config, hubPowerState, currentActivity)}
+            ${this.renderActivityButtons(this.config, hubPowerState, currentActivity)}
 
-            ${this.renderVolumeControls(this.hass, this._config, buttonConfig, currentActivityConfig)}
+            ${this.renderVolumeControls(this.hass, this.config, buttonConfig, currentActivityConfig)}
 
-            ${this.renderKeyPad(this._config, buttonConfig, currentActivityConfig, currentDevice)}
+            ${this.renderKeyPad(this.config, buttonConfig, currentActivityConfig, currentDevice)}
 
             <div class="play-pause">
                 ${this.renderIconButton(buttonConfig['skip_back'], currentDevice)}
@@ -287,8 +267,15 @@ export class HarmonyCard extends LitElement {
             <ha-icon-button 
                 icon="${buttonConfig.icon}" 
                 style="${styleMap(buttonStyles)}"
-                @click="${e => this.deviceCommand(e, buttonConfig.device || device, buttonConfig.command || '')}" 
-                @touchstart="${e => this.preventBubbling(e)}">
+                @action=${e => this._handleButtonAction(e, buttonConfig, buttonConfig.device || device, buttonConfig.command || '')}
+                .actionHandler=${actionHandler({
+                    hasHold: hasAction(buttonConfig.hold_action),
+                    hasDoubleClick: hasAction(buttonConfig.double_tap_action),
+                    repeat: buttonConfig.hold_action?.repeat,
+                })}
+                @click="${e => this.preventBubbling(e)}" 
+                @touchstart="${e => this.preventBubbling(e)}"                                
+                >
             </ha-icon-button>
         `;
     }
@@ -350,13 +337,39 @@ export class HarmonyCard extends LitElement {
     }
 
     private _handleAction(ev: ActionHandlerEvent): void {
-        if (this.hass && this._config && ev.detail.action) {
-            handleAction(this, this.hass, this._config, ev.detail.action);
+        if (this.hass && this.config && ev.detail.action) {
+            console.log(ev, this.config);
+            handleAction(this, this.hass, this.config, ev.detail.action);
+        }
+    }
+
+    private _handleButtonAction(ev: ActionHandlerEvent, config: HarmonyButtonConfig, device: string | undefined, command: string): void {
+        if (this.hass && config && ev.detail.action) {
+            console.log(ev, config);
+            switch (ev.detail.action) {
+                case 'tap':
+                    const actionData: CallServiceActionConfig = {
+                        action: 'call-service',
+                        service: 'remote.send_command',
+                        service_data: {
+                            entity_id: this.config.entity,
+                            command: command,
+                            device: device,
+                        },
+                    }
+                    config.tap_action = actionData;
+                    handleAction(this, this.hass, config, ev.detail.action);
+                    break;
+                default:
+                    handleAction(this, this.hass, config, ev.detail.action);
+                    break;
+            }
+
         }
     }
 
     private computeStyles() {
-        var scale = this._config?.scale || 1;
+        var scale = this.config?.scale || 1;
 
         return styleMap({
             '--mmp-unit': `${40 * scale}px`,

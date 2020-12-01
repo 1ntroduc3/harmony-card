@@ -37,4 +37,7 @@ export interface HarmonyButtonConfig {
     icon?: string;
     hide?: boolean;
     color?: string;
+    tap_action?: ActionConfig;
+    hold_action?: ActionConfig;
+    double_tap_action?: ActionConfig;
 }
