@@ -15,9 +15,6 @@ export interface HarmonyCardConfig {
     show_warning?: boolean;
     show_error?: boolean;
     test_gui?: boolean;
-    tap_action?: ActionConfig;
-    hold_action?: ActionConfig;
-    double_tap_action?: ActionConfig;
     buttons?: { [key: string]: HarmonyButtonConfig };
 }
 

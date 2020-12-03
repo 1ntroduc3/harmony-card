@@ -115,6 +115,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         element.actionHandler = { options };
 
         element.actionHandler.start = (ev: Event): void => {
+            console.log('START', ev);
             this.cancelled = false;
             let x;
             let y;
@@ -130,7 +131,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
                 this.timer = window.setTimeout(() => {
                     this.startAnimation(x, y);
                     this.held = true;
-                    console.log(options);
+                    console.log('TIMER');
                     if (options.repeat && !this.isRepeating) {
                         this.isRepeating = true;
                         this.repeatTimeout = setInterval(() => {
@@ -142,6 +143,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         };
 
         element.actionHandler.end = (ev: Event): void => {
+            console.log('END', ev);
             // Don't respond when moved or scrolled while touch
             if (['touchend', 'touchcancel'].includes(ev.type) && this.cancelled) {
                 if (this.isRepeating && this.repeatTimeout) {
@@ -196,6 +198,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         element.addEventListener('touchcancel', element.actionHandler.end);
 
         element.addEventListener('mousedown', element.actionHandler.start, { passive: true });
+        // element.addEventListener('mouseup', element.actionHandler.end);
         element.addEventListener('click', element.actionHandler.end);
 
         element.addEventListener('keyup', element.actionHandler.handleEnter);
