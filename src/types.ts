@@ -12,8 +12,6 @@ export interface HarmonyCardConfig {
     hide_activities?: boolean;
     scale?: number;
     name?: string;
-    show_warning?: boolean;
-    show_error?: boolean;
     test_gui?: boolean;
     buttons?: { [key: string]: HarmonyButtonConfig };
 }

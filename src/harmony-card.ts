@@ -9,20 +9,13 @@ import {
     getLovelace,
     hasConfigOrEntityChanged
 } from 'custom-card-helpers';
-
 import { styleMap, StyleInfo } from 'lit-html/directives/style-map';
-
-import 'fa-icons';
 import sharedStyle from './sharedStyle';
-
 import './editor';
-
 import { HarmonyCardConfig, HarmonyActivityConfig, HarmonyButtonConfig } from './types';
 import { actionHandler } from './action-handler-directive';
 import { CARD_VERSION, DEFAULT_BUTTONS } from './const';
-
 import { localize } from './localize/localize';
-
 import * as deepmerge from 'deepmerge';
 
 /* eslint no-console: 0 */
@@ -42,16 +35,10 @@ export class HarmonyCard extends LitElement {
         return {};
     }
 
-    // TODO Add any properities that should cause your element to re-render here
     @property() public hass?: HomeAssistant;
     @internalProperty() private config!: HarmonyCardConfig;
 
     public setConfig(config: HarmonyCardConfig): void {
-        // TODO Check for required fields and that they are of the proper format
-        if (!config || config.show_error) {
-            throw new Error(localize('common.invalid_configuration'));
-        }
-
         if (!config.entity || config.entity.split('.')[0] !== 'remote') {
             throw new Error('Specify an entity from within the remote domain for a harmony hub.');
         }
@@ -84,7 +71,6 @@ export class HarmonyCard extends LitElement {
 
     protected harmonyCommand(e, activity: string) {
         this.preventBubbling(e);
-
         if (null == activity || activity == "off" || activity == 'turn_off') {
             this.hass?.callService("remote", "turn_off", { entity_id: this.config?.entity });
         }
@@ -117,15 +103,6 @@ export class HarmonyCard extends LitElement {
             return html``;
         }
 
-        // TODO Check for stateObj or other necessary things and render a warning if missing
-        if (this.config.show_warning) {
-            return html`
-        <ha-card>
-          <div class="warning">${localize('common.show_warning')}</div>
-        </ha-card>
-      `;
-        }
-
         var hubState = this.hass.states[this.config.entity];
 
         var hubPowerState = hubState.state;
@@ -140,7 +117,6 @@ export class HarmonyCard extends LitElement {
       <ha-card
         style=${this.computeStyles()}
         .header=${this.config.name}
-        tabindex="0"
         aria-label=${`Harmony: ${this.config.entity}`}
       >
         <div class="card-content">
@@ -262,6 +238,7 @@ export class HarmonyCard extends LitElement {
             <ha-icon-button
                 icon="${buttonConfig.icon}"
                 style="${styleMap(buttonStyles)}"
+                .hass="${this.hass}"
                 @action=${e => this._handleButtonAction(e, buttonConfig, buttonConfig.device || device, buttonConfig.command || '')}
                 .actionHandler=${actionHandler({
                     hasHold: hasAction(buttonConfig.hold_action),

@@ -53,7 +53,6 @@ export const DEFAULT_BUTTONS: { [key: string]: HarmonyButtonConfig } = {
         icon: 'mdi:numeric-9-circle',
         hide: false
     },
-
     'volume_down': {
         command: 'VolumeDown',
         icon: 'mdi:volume-medium',

@@ -1,5 +1,4 @@
 import { directive, PropertyPart } from 'lit-html';
-
 import { ActionHandlerDetail, ActionHandlerOptions } from 'custom-card-helpers/dist/types';
 import { fireEvent } from 'custom-card-helpers';
 import { deepEqual } from './deep-equal';
@@ -30,20 +29,13 @@ declare global {
 
 class ActionHandler extends HTMLElement implements ActionHandler {
     public holdTime = 500;
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public ripple: any;
-
-    protected timer?: number;
-
+    protected holdTimeout?: number;
     protected held = false;
-
     private cancelled = false;
-
     private dblClickTimeout?: number;
-
-    private repeatTimeout: NodeJS.Timeout | undefined;
-
+    private repeatTimeout?: number;
     private isRepeating = false;
 
     constructor() {
@@ -69,10 +61,10 @@ class ActionHandler extends HTMLElement implements ActionHandler {
               ev,
               () => {
                   this.cancelled = true;
-                  if (this.timer) {
+                  if (this.holdTimeout) {
                       this.stopAnimation();
-                      clearTimeout(this.timer);
-                      this.timer = undefined;
+                      clearTimeout(this.holdTimeout);
+                      this.holdTimeout = undefined;
                       if (this.isRepeating && this.repeatTimeout) {
                           clearInterval(this.repeatTimeout);
                           this.isRepeating = false;
@@ -88,15 +80,12 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         if (element.actionHandler && deepEqual(options, element.actionHandler.options)) {
             return;
         }
-
         if (element.actionHandler) {
             element.removeEventListener('touchstart', element.actionHandler.start!);
             element.removeEventListener('touchend', element.actionHandler.end!);
             element.removeEventListener('touchcancel', element.actionHandler.end!);
-
             element.removeEventListener('mousedown', element.actionHandler.start!);
             element.removeEventListener('click', element.actionHandler.end!);
-
             element.removeEventListener('keyup', element.actionHandler.handleEnter!);
         } else {
             element.addEventListener('contextmenu', (ev: Event) => {
@@ -128,13 +117,13 @@ class ActionHandler extends HTMLElement implements ActionHandler {
             }
             if (options.hasHold) {
                 this.held = false;
-                this.timer = window.setTimeout(() => {
+                this.holdTimeout = window.setTimeout(() => {
                     this.startAnimation(x, y);
                     this.held = true;
                     console.log('TIMER');
                     if (options.repeat && !this.isRepeating) {
                         this.isRepeating = true;
-                        this.repeatTimeout = setInterval(() => {
+                        this.repeatTimeout = window.setInterval(() => {
                             fireEvent(element, 'action', { action: 'hold' });
                         }, options.repeat);
                     }
@@ -158,13 +147,13 @@ class ActionHandler extends HTMLElement implements ActionHandler {
                 ev.preventDefault();
             }
             if (options.hasHold) {
-                clearTimeout(this.timer);
+                clearTimeout(this.holdTimeout);
                 if (this.isRepeating && this.repeatTimeout) {
                     clearInterval(this.repeatTimeout);
                 }
                 this.isRepeating = false;
                 this.stopAnimation();
-                this.timer = undefined;
+                this.holdTimeout = undefined;
             }
             if (options.hasHold && this.held) {
                 if (!options.repeat) {
@@ -187,7 +176,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         };
 
         element.actionHandler.handleEnter = (ev: KeyboardEvent): void => {
-            if (ev.keyCode !== 13) {
+            if (ev.code !== '13') {
                 return;
             }
             (ev.currentTarget as ActionHandlerElement).actionHandler!.end!(ev);
@@ -196,11 +185,8 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         element.addEventListener('touchstart', element.actionHandler.start, { passive: true });
         element.addEventListener('touchend', element.actionHandler.end);
         element.addEventListener('touchcancel', element.actionHandler.end);
-
         element.addEventListener('mousedown', element.actionHandler.start, { passive: true });
-        // element.addEventListener('mouseup', element.actionHandler.end);
         element.addEventListener('click', element.actionHandler.end);
-
         element.addEventListener('keyup', element.actionHandler.handleEnter);
     }
 
@@ -222,7 +208,6 @@ class ActionHandler extends HTMLElement implements ActionHandler {
     }
 }
 
-// TODO You need to replace all instances of "action-handler-harmony" with "action-handler-<your card name>"
 customElements.define('action-handler-harmony', ActionHandler);
 
 const getActionHandler = (): ActionHandler => {
@@ -231,18 +216,17 @@ const getActionHandler = (): ActionHandler => {
         return body.querySelector('action-handler-harmony') as ActionHandler;
     }
 
-    const actionhandler = document.createElement('action-handler-harmony');
-    body.appendChild(actionhandler);
-
-    return actionhandler as ActionHandler;
+    const actionHandler = document.createElement('action-handler-harmony');
+    body.appendChild(actionHandler);
+    return actionHandler as ActionHandler;
 };
 
 export const actionHandlerBind = (element: ActionHandlerElement, options: ActionHandlerOptionsExtra): void => {
-    const actionhandler: ActionHandler = getActionHandler();
-    if (!actionhandler) {
+    const actionHandler: ActionHandler = getActionHandler();
+    if (!actionHandler) {
         return;
     }
-    actionhandler.bind(element, options);
+    actionHandler.bind(element, options);
 };
 
 export const actionHandler = directive((options: ActionHandlerOptionsExtra = {}) => (part: PropertyPart): void => {
