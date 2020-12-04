@@ -21,7 +21,6 @@
         "@polymer/paper-icon-button": "^3.0.2",
         "custom-card-helpers": "^1.6.6",
         "deepmerge": "^4.2.2",
-        "fa-icons": "^0.1.9",
         "home-assistant-js-websocket": "^4.4.0",
         "lit-element": "^2.2.1",
         "lit-html": "^1.1.2"

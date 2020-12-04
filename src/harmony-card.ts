@@ -53,39 +53,24 @@ export class HarmonyCard extends LitElement {
         };
     }
 
-    protected preventBubbling(e) {
-        // e.preventDefault();
+    protected preventBubbling(e): void {
         e.stopPropagation();
         e.cancelBubble = true;
     }
 
-    protected deviceCommand(e, device: string | undefined, cmd: string) {
-        this.preventBubbling(e);
-
-        if (null == device) {
-            return;
-        }
-
-        this.hass?.callService("remote", "send_command", { entity_id: this.config?.entity, command: cmd, device: device });
-    }
-
-    protected harmonyCommand(e, activity: string) {
+    protected harmonyCommand(e, activity: string): void {
         this.preventBubbling(e);
         if (null == activity || activity == "off" || activity == 'turn_off') {
             this.hass?.callService("remote", "turn_off", { entity_id: this.config?.entity });
-        }
-        else {
+        } else {
             this.hass?.callService("remote", "turn_on", { entity_id: this.config?.entity, activity: activity });
         }
     }
 
-    protected volumeCommand(e, command: string, attributes?: any) {
+    protected volumeCommand(e, command: string, attributes?: any): void {
         this.preventBubbling(e);
-
         if (this.config?.volume_entity) {
-
-            var baseAttributes = { entity_id: this.config?.volume_entity };
-
+            const baseAttributes = { entity_id: this.config?.volume_entity };
             this.hass?.callService("media_player", command, Object.assign(baseAttributes, attributes || {}));
         }
     }
@@ -94,7 +79,6 @@ export class HarmonyCard extends LitElement {
         if (!this.config) {
             return false;
         }
-
         return hasConfigOrEntityChanged(this, changedProps, false);
     }
 
@@ -103,15 +87,12 @@ export class HarmonyCard extends LitElement {
             return html``;
         }
 
-        var hubState = this.hass.states[this.config.entity];
-
-        var hubPowerState = hubState.state;
-        var currentActivity = hubState.attributes.current_activity;
-
-        var currentActivityConfig = this.config.activities.find(activity => activity.name === currentActivity);
-        var currentDevice = currentActivityConfig?.device;
-
-        var buttonConfig = this.computeButtonConfig(this.config, currentActivityConfig);
+        const hubState = this.hass.states[this.config.entity];
+        const hubPowerState = hubState.state;
+        const currentActivity = hubState.attributes.current_activity;
+        const currentActivityConfig = this.config.activities.find(activity => activity.name === currentActivity);
+        const currentDevice = currentActivityConfig?.device;
+        const buttonConfig = this.computeButtonConfig(this.config, currentActivityConfig);
 
         return html`
       <ha-card
@@ -121,9 +102,7 @@ export class HarmonyCard extends LitElement {
       >
         <div class="card-content">
             ${this.renderActivityButtons(this.config, hubPowerState, currentActivity)}
-
             ${this.renderVolumeControls(this.hass, this.config, buttonConfig, currentActivityConfig)}
-
             ${this.renderKeyPad(this.config, buttonConfig, currentActivityConfig, currentDevice)}
 
             <div class="play-pause">
@@ -139,15 +118,15 @@ export class HarmonyCard extends LitElement {
                 ${this.renderIconButton(buttonConfig['dpad_up'], currentDevice, { 'grid-column': '2', 'grid-row': '1' })}
                 ${this.renderIconButton(buttonConfig['dpad_down'], currentDevice, { 'grid-column': '2', 'grid-row': '3' })}
                 ${this.renderIconButton(buttonConfig['dpad_center'], currentDevice, { 'grid-column': '2', 'grid-row': '2' })}        
-            </div>        
+            </div>
 
             <div class="xbox-buttons">
                 ${this.renderIconButton(buttonConfig['xbox'], currentDevice, { 'grid-column': '1', 'grid-row': '2' })}
                 ${this.renderIconButton(buttonConfig['back'], currentDevice, { 'grid-column': '2', 'grid-row': '2' })}
                 ${this.renderIconButton(buttonConfig['a'], currentDevice, { 'grid-column': '4', 'grid-row': '2' })}
                 ${this.renderIconButton(buttonConfig['b'], currentDevice, { 'grid-column': '5', 'grid-row': '2' })}
-                ${this.renderIconButton(buttonConfig['x'], currentDevice, { 'grid-column': '6', 'grid-row': '2' })}        
-                ${this.renderIconButton(buttonConfig['y'], currentDevice, { 'grid-column': '7', 'grid-row': '2' })}        
+                ${this.renderIconButton(buttonConfig['x'], currentDevice, { 'grid-column': '6', 'grid-row': '2' })}
+                ${this.renderIconButton(buttonConfig['y'], currentDevice, { 'grid-column': '7', 'grid-row': '2' })}
             </div>
         </div>
       </ha-card>
@@ -158,9 +137,9 @@ export class HarmonyCard extends LitElement {
         if (typeof config.hide_activities !== 'undefined' && config.hide_activities) {
             return html``;
         }
-        const iconClass = config.show_activities_icons ? 'activities-icons' : '';
+        const activityClass = config.show_activities_icons ? 'activities activities-icons' : 'activities';
         return html`
-        <div class="activities ${iconClass}">
+        <div class="${activityClass}">
             ${this.renderActivityButton(hubPowerState === 'off', 'turn_off', 'off', config.show_activities_icons, 'mdi:power')}
             ${config.activities.map(
               activity => html`
@@ -194,46 +173,42 @@ export class HarmonyCard extends LitElement {
                 label="${label}"
                 @click="${e => this.harmonyCommand(e, command)}"
                 @touchstart="${e => this.preventBubbling(e)}"
-              ></mwc-button>        
+              ></mwc-button>
             `}
         `;
     }
 
-    private renderKeyPad(config: HarmonyCardConfig, buttonConfig: { [key: string]: HarmonyButtonConfig }, currentActivityConfig: HarmonyActivityConfig | undefined, device?: string) {
+    private renderKeyPad(config: HarmonyCardConfig, buttonConfig: { [key: string]: HarmonyButtonConfig }, currentActivityConfig: HarmonyActivityConfig | undefined, device?: string): TemplateResult {
         if (typeof currentActivityConfig?.hide_keyPad != 'undefined' && !currentActivityConfig?.hide_keyPad) {
             return this.renderKeyPadButton(buttonConfig, device);
-        }
-        else if (typeof config.hide_keyPad != 'undefined' && !config.hide_keyPad) {
+        } else if (typeof config.hide_keyPad != 'undefined' && !config.hide_keyPad) {
             return this.renderKeyPadButton(buttonConfig, device);
         }
-
         return html``;
     }
 
-    private renderKeyPadButton(buttonConfig: { [key: string]: HarmonyButtonConfig }, device?: string) {
+    private renderKeyPadButton(buttonConfig: { [key: string]: HarmonyButtonConfig }, device?: string): TemplateResult {
         return html`
         <div class="remote">
             ${this.renderIconButton(buttonConfig['1'], device, { 'grid-column': '1', 'grid-row': '1' })}
             ${this.renderIconButton(buttonConfig['2'], device, { 'grid-column': '2', 'grid-row': '1' })}
             ${this.renderIconButton(buttonConfig['3'], device, { 'grid-column': '3', 'grid-row': '1' })}
             ${this.renderIconButton(buttonConfig['4'], device, { 'grid-column': '1', 'grid-row': '2' })}
-            ${this.renderIconButton(buttonConfig['5'], device, { 'grid-column': '2', 'grid-row': '2' })}    
+            ${this.renderIconButton(buttonConfig['5'], device, { 'grid-column': '2', 'grid-row': '2' })}
             ${this.renderIconButton(buttonConfig['6'], device, { 'grid-column': '3', 'grid-row': '2' })}
-            ${this.renderIconButton(buttonConfig['7'], device, { 'grid-column': '1', 'grid-row': '3' })}    
+            ${this.renderIconButton(buttonConfig['7'], device, { 'grid-column': '1', 'grid-row': '3' })}
             ${this.renderIconButton(buttonConfig['8'], device, { 'grid-column': '2', 'grid-row': '3' })}
             ${this.renderIconButton(buttonConfig['9'], device, { 'grid-column': '3', 'grid-row': '3' })}
             ${this.renderIconButton(buttonConfig['0'], device, { 'grid-column': '2', 'grid-row': '4' })}
-        </div> 
+        </div>
         `;
     }
 
-    private renderIconButton(buttonConfig: HarmonyButtonConfig, device?: string, styles?: StyleInfo) {
+    private renderIconButton(buttonConfig: HarmonyButtonConfig, device?: string, styles?: StyleInfo): TemplateResult {
         if (buttonConfig.hide === true) {
             return html``;
         }
-
-        var buttonStyles = Object.assign(styles || {}, { color: buttonConfig.color });
-
+        const buttonStyles = Object.assign(styles || {}, { color: buttonConfig.color });
         return html`
             <ha-icon-button
                 icon="${buttonConfig.icon}"
@@ -250,32 +225,28 @@ export class HarmonyCard extends LitElement {
         `;
     }
 
-    private renderVolumeControls(hass: HomeAssistant, config: HarmonyCardConfig, buttonConfig: { [key: string]: HarmonyButtonConfig }, currentActivityConfig: HarmonyActivityConfig | undefined) {
+    private renderVolumeControls(hass: HomeAssistant, config: HarmonyCardConfig, buttonConfig: { [key: string]: HarmonyButtonConfig }, currentActivityConfig: HarmonyActivityConfig | undefined): TemplateResult {
         if (currentActivityConfig?.volume_entity) {
             return this.renderMediaPlayerVolumeControls(hass, currentActivityConfig?.volume_entity, buttonConfig);
-        }
-        else if (currentActivityConfig?.volume_device) {
+        } else if (currentActivityConfig?.volume_device) {
             return this.renderDeviceVolumeControls(currentActivityConfig?.volume_device, buttonConfig);
-        }
-        else if (config.volume_entity) {
+        } else if (config.volume_entity) {
             return this.renderMediaPlayerVolumeControls(hass, config.volume_entity, buttonConfig);
-        }
-        else if (config.volume_device) {
+        } else if (config.volume_device) {
             return this.renderDeviceVolumeControls(config.volume_device, buttonConfig);
         }
-
         return html``;
     }
 
-    private renderMediaPlayerVolumeControls(hass: HomeAssistant, volumeMediaPlayer: string, buttonConfig: { [key: string]: HarmonyButtonConfig }) {
-        var volume_state = hass.states[volumeMediaPlayer];
+    private renderMediaPlayerVolumeControls(hass: HomeAssistant, volumeMediaPlayer: string, buttonConfig: { [key: string]: HarmonyButtonConfig }): TemplateResult {
+        const volume_state = hass.states[volumeMediaPlayer];
 
-        var volume = volume_state.attributes.volume_level;
-        var muted = volume_state.attributes.is_volume_muted;
+        const volume = volume_state.attributes.volume_level;
+        const muted = volume_state.attributes.is_volume_muted;
 
-        var volumeDownStyle = Object.assign({} as StyleInfo, { color: buttonConfig['volume_down'].color });
-        var volumeUpStyle = Object.assign({} as StyleInfo, { color: buttonConfig['volume_up'].color });
-        var volumeMuteStyle = Object.assign({} as StyleInfo, { color: buttonConfig['volume_mute'].color });
+        const volumeDownStyle = Object.assign({} as StyleInfo, { color: buttonConfig['volume_down'].color });
+        const volumeUpStyle = Object.assign({} as StyleInfo, { color: buttonConfig['volume_up'].color });
+        const volumeMuteStyle = Object.assign({} as StyleInfo, { color: buttonConfig['volume_mute'].color });
 
         return html`
             <div class="volume-controls">
@@ -295,7 +266,7 @@ export class HarmonyCard extends LitElement {
             </div>`;
     }
 
-    private renderDeviceVolumeControls(device: string, buttonConfig: { [key: string]: HarmonyButtonConfig }) {
+    private renderDeviceVolumeControls(device: string, buttonConfig: { [key: string]: HarmonyButtonConfig }): TemplateResult {
         return html`
             <div class="volume-controls">
                 ${this.renderIconButton(buttonConfig['volume_down'], device)}
@@ -304,17 +275,9 @@ export class HarmonyCard extends LitElement {
             </div>`;
     }
 
-    private _handleAction(ev: ActionHandlerEvent): void {
-        if (this.hass && this.config && ev.detail.action) {
-            console.log('ROOT', ev.detail.action);
-            handleAction(this, this.hass, this.config, ev.detail.action);
-        }
-    }
-
     private _handleButtonAction(ev: ActionHandlerEvent, config: HarmonyButtonConfig, device: string | undefined, command: string | undefined): void {
         this.preventBubbling(ev);
         if (this.hass && config && ev.detail.action) {
-            console.log('BTN', ev.detail.action);
             switch (ev.detail.action) {
                 case 'tap':
                     const actionData: CallServiceActionConfig = {
@@ -327,19 +290,14 @@ export class HarmonyCard extends LitElement {
                         },
                     }
                     config.tap_action = config.tap_action ? config.tap_action : actionData;
-                    handleAction(this, this.hass, config, ev.detail.action);
-                    break;
-                default:
-                    handleAction(this, this.hass, config, ev.detail.action);
                     break;
             }
-
+            handleAction(this, this.hass, {...config, entity: this.config.entity}, ev.detail.action);
         }
     }
 
     private computeStyles() {
-        var scale = this.config?.scale || 1;
-
+        const scale = this.config?.scale || 1;
         return styleMap({
             '--mmp-unit': `${40 * scale}px`,
             '--mdc-icon-size': `${24 * scale}px`
@@ -349,21 +307,17 @@ export class HarmonyCard extends LitElement {
     private computeButtonConfig(config: HarmonyCardConfig, currentActivityConfig?: HarmonyActivityConfig): { [key: string]: HarmonyButtonConfig } {
         // overwrite in the card button config
         let buttonConfig = deepmerge.default(DEFAULT_BUTTONS, config.buttons || {});
-
         // layer in the activity button config
         if (currentActivityConfig) {
             buttonConfig = deepmerge.default(buttonConfig, currentActivityConfig.buttons || {});
         }
         if (currentActivityConfig?.volume_entity) {
             buttonConfig = this.computeVolumeBtnConfig(buttonConfig, currentActivityConfig.volume_entity, 'media');
-        }
-        else if (currentActivityConfig?.volume_device) {
+        } else if (currentActivityConfig?.volume_device) {
             buttonConfig = this.computeVolumeBtnConfig(buttonConfig, currentActivityConfig.volume_device, 'remote');
-        }
-        else if (config.volume_entity) {
+        } else if (config.volume_entity) {
             buttonConfig = this.computeVolumeBtnConfig(buttonConfig, config.volume_entity, 'media');
-        }
-        else if (config.volume_device) {
+        } else if (config.volume_device) {
             buttonConfig = this.computeVolumeBtnConfig(buttonConfig, config.volume_device, 'remote');
         }
         return buttonConfig;
@@ -412,6 +366,5 @@ export class HarmonyCard extends LitElement {
             }`,
             sharedStyle
         ];
-
     }
 }

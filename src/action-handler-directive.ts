@@ -27,6 +27,13 @@ declare global {
     }
 }
 
+const showDebug = true;
+const logger = (message: string, object: object): void => {
+    if (showDebug) {
+        console.log(message, object);
+    }
+}
+
 class ActionHandler extends HTMLElement implements ActionHandler {
     public holdTime = 500;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,7 +111,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         element.actionHandler = { options };
 
         element.actionHandler.start = (ev: Event): void => {
-            console.log('START', ev);
+            logger('START', ev);
             this.cancelled = false;
             let x;
             let y;
@@ -120,7 +127,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
                 this.holdTimeout = window.setTimeout(() => {
                     this.startAnimation(x, y);
                     this.held = true;
-                    console.log('TIMER');
+                    logger('TIMER', ev);
                     if (options.repeat && !this.isRepeating) {
                         this.isRepeating = true;
                         this.repeatTimeout = window.setInterval(() => {
@@ -132,7 +139,7 @@ class ActionHandler extends HTMLElement implements ActionHandler {
         };
 
         element.actionHandler.end = (ev: Event): void => {
-            console.log('END', ev);
+            logger('END', ev);
             // Don't respond when moved or scrolled while touch
             if (['touchend', 'touchcancel'].includes(ev.type) && this.cancelled) {
                 if (this.isRepeating && this.repeatTimeout) {
