@@ -1,5 +1,10 @@
 # Harmony Card by [@sbryfcz](https://www.github.com/sbryfcz)
 
+Added activity icons & hide activities options by [@mattieha](https://www.github.com/mattieha)
+
+Added hold & double tap actions for buttons by [@mattieha](https://www.github.com/mattieha)
+
+
 A custom Home Assistant card to integrate with Harmony Hubs.
 
 [![GitHub Release][releases-shield]][releases]
