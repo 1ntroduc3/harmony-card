@@ -10,32 +10,6 @@ const options = {
         secondary: 'Required options for this card to function',
         show: true,
     },
-    actions: {
-        icon: 'gesture-tap-hold',
-        name: 'Actions',
-        secondary: 'Perform actions based on tapping/clicking',
-        show: false,
-        options: {
-            tap: {
-                icon: 'gesture-tap',
-                name: 'Tap',
-                secondary: 'Set the action to perform on tap',
-                show: false,
-            },
-            hold: {
-                icon: 'gesture-tap-hold',
-                name: 'Hold',
-                secondary: 'Set the action to perform on hold',
-                show: false,
-            },
-            double_tap: {
-                icon: 'gesture-double-tap',
-                name: 'Double Tap',
-                secondary: 'Set the action to perform on double tap',
-                show: false,
-            },
-        },
-    },
     appearance: {
         icon: 'palette',
         name: 'Appearance',
@@ -76,46 +50,6 @@ export class HarmonyCardEditor extends LitElement implements LovelaceCardEditor 
         }
 
         return '';
-    }
-
-    get _show_warning(): boolean {
-        if (this._config) {
-            return this._config.show_warning || false;
-        }
-
-        return false;
-    }
-
-    get _show_error(): boolean {
-        if (this._config) {
-            return this._config.show_error || false;
-        }
-
-        return false;
-    }
-
-    get _tap_action(): ActionConfig {
-        if (this._config) {
-            return this._config.tap_action || { action: 'more-info' };
-        }
-
-        return { action: 'more-info' };
-    }
-
-    get _hold_action(): ActionConfig {
-        if (this._config) {
-            return this._config.hold_action || { action: 'none' };
-        }
-
-        return { action: 'none' };
-    }
-
-    get _double_tap_action(): ActionConfig {
-        if (this._config) {
-            return this._config.double_tap_action || { action: 'none' };
-        }
-
-        return { action: 'none' };
     }
 
     protected render(): TemplateResult | void {
@@ -171,61 +105,6 @@ export class HarmonyCardEditor extends LitElement implements LovelaceCardEditor 
               </div>
             `
                 : ''}
-        <div class="option" @click=${this._toggleOption} .option=${'actions'}>
-          <div class="row">
-            <ha-icon .icon=${`mdi:${options.actions.icon}`}></ha-icon>
-            <div class="title">${options.actions.name}</div>
-          </div>
-          <div class="secondary">${options.actions.secondary}</div>
-        </div>
-        ${options.actions.show
-                ? html`
-              <div class="values">
-                <div class="option" @click=${this._toggleAction} .option=${'tap'}>
-                  <div class="row">
-                    <ha-icon .icon=${`mdi:${options.actions.options.tap.icon}`}></ha-icon>
-                    <div class="title">${options.actions.options.tap.name}</div>
-                  </div>
-                  <div class="secondary">${options.actions.options.tap.secondary}</div>
-                </div>
-                ${options.actions.options.tap.show
-                        ? html`
-                      <div class="values">
-                        <paper-item>Action Editors Coming Soon</paper-item>
-                      </div>
-                    `
-                        : ''}
-                <div class="option" @click=${this._toggleAction} .option=${'hold'}>
-                  <div class="row">
-                    <ha-icon .icon=${`mdi:${options.actions.options.hold.icon}`}></ha-icon>
-                    <div class="title">${options.actions.options.hold.name}</div>
-                  </div>
-                  <div class="secondary">${options.actions.options.hold.secondary}</div>
-                </div>
-                ${options.actions.options.hold.show
-                        ? html`
-                      <div class="values">
-                        <paper-item>Action Editors Coming Soon</paper-item>
-                      </div>
-                    `
-                        : ''}
-                <div class="option" @click=${this._toggleAction} .option=${'double_tap'}>
-                  <div class="row">
-                    <ha-icon .icon=${`mdi:${options.actions.options.double_tap.icon}`}></ha-icon>
-                    <div class="title">${options.actions.options.double_tap.name}</div>
-                  </div>
-                  <div class="secondary">${options.actions.options.double_tap.secondary}</div>
-                </div>
-                ${options.actions.options.double_tap.show
-                        ? html`
-                      <div class="values">
-                        <paper-item>Action Editors Coming Soon</paper-item>
-                      </div>
-                    `
-                        : ''}
-              </div>
-            `
-                : ''}
         <div class="option" @click=${this._toggleOption} .option=${'appearance'}>
           <div class="row">
             <ha-icon .icon=${`mdi:${options.appearance.icon}`}></ha-icon>
@@ -243,29 +122,11 @@ export class HarmonyCardEditor extends LitElement implements LovelaceCardEditor 
                   @value-changed=${this._valueChanged}
                 ></paper-input>
                 <br />
-                <ha-switch
-                  aria-label=${`Toggle warning ${this._show_warning ? 'off' : 'on'}`}
-                  .checked=${this._show_warning !== false}
-                  .configValue=${'show_warning'}
-                  @change=${this._valueChanged}
-                  >Show Warning?</ha-switch
-                >
-                <ha-switch
-                  aria-label=${`Toggle error ${this._show_error ? 'off' : 'on'}`}
-                  .checked=${this._show_error !== false}
-                  .configValue=${'show_error'}
-                  @change=${this._valueChanged}
-                  >Show Error?</ha-switch
-                >
               </div>
             `
                 : ''}
       </div>
     `;
-    }
-
-    private _toggleAction(ev): void {
-        this._toggleThing(ev, options.actions.options);
     }
 
     private _toggleOption(ev): void {

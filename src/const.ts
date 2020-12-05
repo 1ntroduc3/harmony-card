@@ -1,6 +1,6 @@
 import { HarmonyButtonConfig } from "./types";
 
-export const CARD_VERSION = '1';
+export const CARD_VERSION = '2';
 
 export const DEFAULT_BUTTONS: { [key: string]: HarmonyButtonConfig } = {
     '0': {
@@ -53,7 +53,6 @@ export const DEFAULT_BUTTONS: { [key: string]: HarmonyButtonConfig } = {
         icon: 'mdi:numeric-9-circle',
         hide: false
     },
-
     'volume_down': {
         command: 'VolumeDown',
         icon: 'mdi:volume-medium',
