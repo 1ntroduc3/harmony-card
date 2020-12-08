@@ -196,7 +196,7 @@ y:
 ### Configuration Order of Precedence
 In general the configuration for the card will be determined from more specific configuration to less specific configuration. By this, I mean that if there is both global card configuration and activity configuration, this plugin will use the activity level configuration.
 
-Ex.
+Simple example:
 ```yaml
 - type: 'custom:harmony-card'
   entity: remote.living_room_hub
@@ -266,6 +266,243 @@ resources:
       icon: 'mdi:chevron-down'
       device: Onkyo AV Receiver
       command: VolumeDown
+```
+### Advanced example with hold actions, custom delays, custom icons and customized activity buttons
+```yaml
+- type: 'custom:harmony-card'
+  entity: remote.harmony
+  show_activities_icons: true
+  scale: 1.5
+  volume_device: tv
+  activities:
+    - name: Smart TV
+      icon: mdi:youtube-tv
+      device: tv
+      buttons:
+        '0':
+          hide: false
+        '1':
+          hide: false
+        '2':
+          hide: false
+        '3':
+          hide: false
+        '4':
+          hide: false
+        '5':
+          hide: false
+        '6':
+          hide: false
+        '7':
+          hide: false
+        '8':
+          hide: false
+        '9':
+          hide: false
+        xbox:
+          hide: false
+          icon: mdi:home-circle
+          command: home
+        back:
+          command: back
+          hide: false
+        a:
+          command: ActionMenu
+          hide: false
+          icon: 'mdi:microsoft-xbox-controller-menu'
+          color: '#E0E1E1'
+        b:
+          hide: false
+          command: netflix
+          icon: 'mdi:netflix'
+          color: '#E0E1E1'
+        x:
+          hide: false
+          command: Yellow
+          icon: 'mdi:circle'
+          color: '#f1c70f'
+        'y':
+          hide: false
+          command: Blue
+          icon: 'mdi:circle'
+          color: '#003bbd'
+        dpad_center:
+          hide: false
+          command: select
+          hold_action:
+            action: call-service
+            service: remote.send_command
+            service_data:
+              entity_id: remote.harmony
+              device: tv
+              hold_secs: 2.5
+              command: select
+        dpad_down:
+          hide: false
+        dpad_left:
+          hide: false
+        dpad_right:
+          hide: false
+        dpad_up:
+          hide: false
+        pause:
+          hide: false
+          icon: mdi:play-pause
+        play:
+          hide: false
+          icon: mdi:stop
+          command: stop
+        skip_back:
+          hide: false
+        skip_forward:
+          hide: false
+        volume_down:
+          hide: false
+        volume_mute:
+          hide: false
+        volume_up:
+          hide: false
+    - name: Listen to Music
+      device: LG Amp
+      icon: mdi:music
+      volume_entity: media_player.living_room_bar
+    - name: Play a Game
+      device: speelcomputer Microsoft
+      icon: mdi:microsoft-xbox-controller
+    - name: Watch TV
+      device: DVR KPN
+      icon: mdi:television-classic
+      buttons:
+        '0':
+          hide: false
+        '1':
+          hide: false
+        '2':
+          hide: false
+        '3':
+          hide: false
+        '4':
+          hide: false
+        '5':
+          hide: false
+        '6':
+          hide: false
+        '7':
+          hide: false
+        '8':
+          hide: false
+        '9':
+          hide: false
+        xbox:
+          hide: true
+        back:
+          command: Cancel
+          hide: false
+        a:
+          command: Red
+          hide: false
+          icon: 'mdi:circle'
+          color: '#e43308'
+        b:
+          hide: false
+          command: Green
+          icon: 'mdi:circle'
+          color: '#2d9f1c'
+        x:
+          hide: false
+          command: Yellow
+          icon: 'mdi:circle'
+          color: '#f1c70f'
+        'y':
+          hide: false
+          command: Blue
+          icon: 'mdi:circle'
+          color: '#003bbd'
+        dpad_center:
+          hide: false
+          command: select
+        dpad_down:
+          hide: false
+        dpad_left:
+          hide: false
+        dpad_right:
+          hide: false
+        dpad_up:
+          hide: false
+        pause:
+          hide: false
+        play:
+          hide: false
+        skip_back:
+          hide: false
+        skip_forward:
+          hide: false
+        volume_down:
+          hide: false
+        volume_mute:
+          hide: false
+        volume_up:
+          hide: false
+  show_warning: false
+  hide_keyPad: false
+  show_error: false
+  buttons:
+    '0':
+      hide: true
+    '1':
+      hide: true
+    '2':
+      hide: true
+    '3':
+      hide: true
+    '4':
+      hide: true
+    '5':
+      hide: true
+    '6':
+      hide: true
+    '7':
+      hide: true
+    '8':
+      hide: true
+    '9':
+      hide: true
+    a:
+      hide: true
+    b:
+      hide: true
+    back:
+      hide: true
+    dpad_center:
+      hide: true
+    dpad_down:
+      hide: true
+    dpad_left:
+      hide: true
+    dpad_right:
+      hide: true
+    dpad_up:
+      hide: true
+    pause:
+      hide: true
+    play:
+      hide: true
+    skip_back:
+      hide: true
+    skip_forward:
+      hide: true
+    volume_down:
+      hide: true
+    volume_mute:
+      hide: true
+    volume_up:
+      hide: true
+    x:
+      hide: true
+    xbox:
+      hide: true
+    'y':
+      hide: true
 ```
 ## Development
 
